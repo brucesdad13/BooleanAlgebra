@@ -23,6 +23,7 @@ public class TruthTable {
 
     /**
      * Print the truth table header to the standard output
+     * Print the truth table to the standard output
      */
     public void printTruthTable() {
         for (String variable : variables) {
@@ -53,9 +54,8 @@ public class TruthTable {
      * - AND: &
      * - XOR: ^
      * - OR: |
-     *     Example:
-     *     Input: "a&b|!a&b"
-     *     Output: [a, b]
+     *  Example Input: "a&b|!a&b"
+     *  Example Output: [a, b]
      * @param expression The expression from which the variables are to be extracted
      */
     private List<String> getVariables(String expression) {
@@ -76,9 +76,13 @@ public class TruthTable {
      * - AND: &
      * - XOR: ^
      * - OR: |
-     *     Example:
-     *     Input: "a&b|!a&b"
-     *     Output: TODO: show example output
+     * Example Input: "a&!b|!a&b"
+     * Example Output:
+     * a | b | a&!b|!a&b
+     * 0 | 0 | 0
+     * 1 | 0 | 1
+     * 0 | 1 | 1
+     * 1 | 1 | 0
      * @param expression The expression for which the truth table is to be rendered
      * @param variables The list of variables in the expression
      * @return The truth table for the given expression
@@ -111,9 +115,9 @@ public class TruthTable {
      */
     private String evaluateExpression(String expression, List<String> variables, int row) {
         String evaluatedExpression = expression;
-        System.out.println("Expression: " + expression); // Debugging
-        System.out.println("Variables: " + variables); // Debugging
-        System.out.println("Row: " + row); // Debugging
+        //System.out.println("Expression: " + expression); // Debugging
+        //System.out.println("Variables: " + variables); // Debugging
+        //System.out.println("Row: " + row); // Debugging
         for (int i = 0; i < variables.size(); i++) {
             evaluatedExpression = evaluatedExpression.replaceAll(variables.get(i), String.valueOf((row / (int) Math.pow(2, i)) % 2));
         }
@@ -128,19 +132,18 @@ public class TruthTable {
      * - AND: &
      * - XOR: ^
      * - OR: |
-     *     Example:
-     *     Input: "a&b|!a&b"
-     *     Output: "ab&!ab&|"
+     * @param expression The infix expression to be converted to postfix
+     * @return The postfix expression
      */
     private String infixToPostfix(String expression) {
         Stack<Character> stack = new Stack<>();
         String postfix = "";
         for (char c : expression.toCharArray()) {
-            if (Character.isDigit(c)) {
+            if (isOperand(c)) { // '0' or '1'
                 postfix += c;
-            } else if (c == '(') {
+            } else if (c == '(') { // '(' open parenthesis
                 stack.push(c);
-            } else if (c == ')') {
+            } else if (c == ')') { // ')' close parenthesis
                 while (!stack.isEmpty() && stack.peek() != '(') {
                     postfix += stack.pop();
                 }
@@ -183,6 +186,36 @@ public class TruthTable {
     }
 
     /**
+     * Returns true if the given character is a binary operand, false otherwise
+     * The binary operand characters are as follows:
+     * - AND: &
+     * - XOR: ^
+     * - OR: |
+     */
+    private boolean isBinaryOperator(char c) {
+        return c == '&' || c == '^' || c == '|';
+    }
+
+    /**
+     * Returns true if the given character is a unary operand, false otherwise
+     * The unary operand characters are as follows:
+     * - NOT: !
+     */
+    private boolean isUnaryOperator(char c) {
+        return c == '!';
+    }
+
+    /**
+     * Returns true if the given character is an operand, false otherwise
+     * The operand characters are as follows:
+     * - 0
+     * - 1
+     */
+    private boolean isOperand(char c) {
+        return Character.isDigit(c);
+    }
+
+    /**
      * Evaluate the postfix expression
      * The postfix expression is given in the form of a string.
      * The postfix expression can contain the following operators:
@@ -202,30 +235,23 @@ public class TruthTable {
         Stack<Integer> stack = new Stack<>();
         //System.out.println("Expression: " + expression); // Debugging
         for (char c : expression.toCharArray()) {
-            if (Character.isDigit(c)) {
+            if (isOperand(c)) { // '0' or '1'
                 stack.push(c - '0');
                 //System.out.println("c: " + c + ", Stack: " + stack); // Debugging
-            } else {
+            } else if (isBinaryOperator(c)) { // '&' (AND) or '^' (XOR) or '|' (OR)
                 if (stack.isEmpty())
                     continue;
                     //throw new IllegalArgumentException("Stack is empty"); // Oops, something went wrong
                 int operand2 = stack.pop();
                 if (stack.isEmpty()) {
                     System.out.printf("Stack is empty after pop into operand2%n");
-                    System.out.printf("c: %c, Operand1: undefined, Operand2: %d%n", c, operand2); // Debugging
-                    if (c == '!') { // Take the complement of the operand
-                        stack.push(operand2 == 0 ? 1 : 0); // Push the complement back to the stack
-                    }
-                    else
-                        stack.push(operand2); // Push the unused operand back to the stack
+                    //System.out.printf("c: %c, Operand1: undefined, Operand2: %d%n", c, operand2); // Debugging
+                    stack.push(operand2); // Push the unused operand back to the stack
                     continue; // Need two operands to evaluate the expression
                 }
                 int operand1 = stack.pop();
-                System.out.printf("c: %c, Operand1: %d, Operand2: %d, Stack: %s%n", c, operand1, operand2, stack); // Debugging
-                if (c == '!') { // Take the complement of the operand
-                    stack.push(operand2 == 0 ? 1 : 0); // Push the complement back to the stack
-                    stack.push(operand1); // Push the unused operand back to the stack
-                } else if (c == '&') { // Note: test equation a&!b&c|a&b|!c&!b|a&!c
+                //System.out.printf("c: %c, Operand1: %d, Operand2: %d, Stack: %s%n", c, operand1, operand2, stack); // Debugging
+                if (c == '&') { // Note: test equation a&!b&c|a&b|!c&!b|a&!c
                     stack.push(operand1 & operand2); // 11!&1&11&|1!1!&|11!&|
                 } else if (c == '^') {
                     stack.push(operand1 ^ operand2);
@@ -233,9 +259,20 @@ public class TruthTable {
                     stack.push(operand1 | operand2);
                 }
             }
+            else if (isUnaryOperator(c)) { // '!' (NOT)
+                if (stack.isEmpty())
+                    //continue;
+                    throw new IllegalArgumentException("Stack is empty"); // Oops, something went wrong
+                int operand = stack.pop();
+                //System.out.printf("c: %c, Operand: %d, Stack: %s%n", c, operand, stack); // Debugging
+                stack.push(operand == 0 ? 1 : 0); // Take the complement of the operand and push it back to the stack
+            }
+            else {
+                throw new IllegalArgumentException("Invalid character: " + c); // Oops, something went wrong
+            }
         }
         int ret = stack.pop();
-        System.out.printf("return %d%n", ret); // Debugging
+        //System.out.printf("return %d%n", ret); // Debugging
         return ret;
     }
 }
