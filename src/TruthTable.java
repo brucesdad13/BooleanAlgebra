@@ -148,6 +148,9 @@ public class TruthTable {
                     postfix += stack.pop();
                 }
                 stack.pop();
+            } else if (c == '!') { // '!' (NOT) unary operator
+                stack.push(c);
+                continue;
             } else {
                 while (!stack.isEmpty() && getPrecedence(c) <= getPrecedence(stack.peek())) {
                     postfix += stack.pop();
@@ -206,6 +209,14 @@ public class TruthTable {
     }
 
     /**
+     * Returns true if the given character is a unary operand, false otherwise
+     * The unary operand characters are as follows:
+     * - NOT: !
+     */
+    private boolean isUnaryOperator(int c) {
+        return c + '0' == '!';
+    }
+    /**
      * Returns true if the given character is an operand, false otherwise
      * The operand characters are as follows:
      * - 0
@@ -252,27 +263,33 @@ public class TruthTable {
                 int operand1 = stack.pop();
                 //System.out.printf("c: %c, Operand1: %d, Operand2: %d, Stack: %s%n", c, operand1, operand2, stack); // Debugging
                 if (c == '&') { // Note: test equation a&!b&c|a&b|!c&!b|a&!c
-                    stack.push(operand1 & operand2); // 11!&1&11&|1!1!&|11!&|
+                    stack.push(operand1 & operand2); // bitwise AND
                 } else if (c == '^') {
-                    stack.push(operand1 ^ operand2);
+                    stack.push(operand1 ^ operand2); // bitwise XOR
                 } else if (c == '|') {
-                    stack.push(operand1 | operand2);
+                    stack.push(operand1 | operand2); // bitwise OR
                 }
             }
             else if (isUnaryOperator(c)) { // '!' (NOT)
                 if (stack.isEmpty())
-                    //continue;
-                    throw new IllegalArgumentException("Stack is empty"); // Oops, something went wrong
-                int operand = stack.pop();
-                //System.out.printf("c: %c, Operand: %d, Stack: %s%n", c, operand, stack); // Debugging
-                stack.push(operand == 0 ? 1 : 0); // Take the complement of the operand and push it back to the stack
+                    continue;
+                    //throw new IllegalArgumentException("Stack is empty"); // Oops, something went wrong
+                while(isUnaryOperator(c)) {
+                    //System.out.printf("c: %c, Stack: %s%n", c, stack); // Debugging
+                    int operand = stack.pop();
+                    stack.push(operand == 0 ? 1 : 0); // Take the complement of the operand and push it back to the stack
+                    if (isUnaryOperator(stack.peek())) {
+                        continue;
+                    }
+                    else {
+                        break;
+                    }
+                }
             }
             else {
                 throw new IllegalArgumentException("Invalid character: " + c); // Oops, something went wrong
             }
         }
-        int ret = stack.pop();
-        //System.out.printf("return %d%n", ret); // Debugging
-        return ret;
+        return stack.pop();
     }
 }
