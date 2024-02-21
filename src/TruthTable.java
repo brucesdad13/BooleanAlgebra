@@ -43,6 +43,7 @@ public class TruthTable {
 
     /** TODO: Implement this method */
     public String getCanonicalExpression() {
+
         return canonicalExpression;
     }
 
