@@ -37,6 +37,8 @@ public class Main {
             expression = args[0];
         } else { // If no expression is given as a command line argument, read it from the standard input
             Scanner scanner = new Scanner(System.in);
+            System.out.println("Use & for AND, | for OR, ^ for XOR, and ! for NOT.");
+            System.out.println("Every operand must be separated by an operator.");
             System.out.print("Enter the boolean algebra expression: ");
             expression = scanner.nextLine();
         }
