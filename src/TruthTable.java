@@ -1,9 +1,31 @@
 /**
  * A class that represents a truth table of a given Boolean Algebra expression.
  * The class can be used to print the truth table
+ * by Charles Stevenson (brucesdad13@gmail.com) @brucesdad13
+ * Revision History:
+ * 2024-03-05: Initial working version (needs further testing to be sure)
+ * TODO: add additional operator symbols:
+ * - Conjunction (and): ∧ *
+ * - Disjunction (or): ∨ +
+ * - Negation (not): ¬ ' ~
+ * TODO: support implicit AND operator e.g. AB instead of A&B
+ * TODO: simplify with laws of Boolean Algebra:
+ * - Idempotent Law: A + A = A and A * A = A
+ * - Domination (Null) Law: A + 0 = A and A * 1 = A
+ * - Identity Law: A + 1 = 1 and A * 0 = 0
+ * - Complement Law: A + A' = 1 and A * A' = 0
+ * - Commutative Law: A + B = B + A and A * B = B * A
+ * - Associative Law: A + (B + C) = (A + B) + C and A * (B * C) = (A * B) * C
+ * - Distributive Law: A * (B + C) = A * B + A * C and A + (B * C) = (A + B) * (A + C)
+ * - Absorption Law: A + A * B = A and A * (A + B) = A
+ * - De Morgan's Law: (A + B)' = A' * B' and (A * B)' = A' + B'
+ * - Consensus Theorem: A * B + A' * C + B * C = A * B + A' * C
+ * - Involution Law: (A')' = A
  * TODO: get the simplified expression and get the canonical expression.
+ * TODO: conversion between POS (Product of Sums) and SOP (Sum of Products) forms.
  */
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Stack;
 public class TruthTable {
@@ -27,9 +49,9 @@ public class TruthTable {
      */
     public void printTruthTable() {
         for (String variable : variables) {
-            System.out.print(variable + " | ");
+            System.out.print(variable + " ");
         }
-        System.out.println(expression);
+        System.out.println(" | F=" + expression);
         for (String row : truthTable) {
             System.out.println(row);
         }
@@ -66,6 +88,7 @@ public class TruthTable {
                 variables.add(String.valueOf(c));
             }
         }
+        variables.sort(Comparator.naturalOrder()); // Sort in ascending order to match the truth table
         return variables;
     }
 
@@ -77,25 +100,30 @@ public class TruthTable {
      * - AND: &
      * - XOR: ^
      * - OR: |
-     * Example Input: "a&!b|!a&b"
+     * Example Input: "A&B&!C|B&!C|!A&B|C"
      * Example Output:
-     * a | b | a&!b|!a&b
-     * 0 | 0 | 0
-     * 1 | 0 | 1
-     * 0 | 1 | 1
-     * 1 | 1 | 0
+     * A B C  | F=A&B&!C|B&!C|!A&B|C
+     * 0 0 0  | 0
+     * 0 0 1  | 1
+     * 0 1 0  | 1
+     * 0 1 1  | 1
+     * 1 0 0  | 0
+     * 1 0 1  | 1
+     * 1 1 0  | 1
+     * 1 1 1  | 1
      * @param expression The expression for which the truth table is to be rendered
      * @param variables The list of variables in the expression
      * @return The truth table for the given expression
+     * TEST: (DD+AAC)DB+CC aka (D&D|A&A&C)&D&B|C&C
      */
     private List<String> getTruthTable(String expression, List<String> variables) {
         List<String> truthTable = new ArrayList<>();
         for (int i = 0; i < Math.pow(2, variables.size()); i++) { // Create a row for each possible combination of values (power of 2)
             String row = "";
-            for (int j = 0; j < variables.size(); j++) {
-                row += (i / (int) Math.pow(2, j)) % 2 + " | ";
+            for (int j = variables.size() - 1; j >=0; j--) {
+                row += (i >> j) % 2 + " "; // Print the binary representation of the row
             }
-            row += evaluateExpression(expression, variables, i);
+            row = row + " | " + evaluateExpression(expression, variables, i);
             truthTable.add(row);
         }
         return truthTable;
@@ -116,12 +144,11 @@ public class TruthTable {
      */
     private String evaluateExpression(String expression, List<String> variables, int row) {
         String evaluatedExpression = expression;
-        //System.out.println("Expression: " + expression); // Debugging
-        //System.out.println("Variables: " + variables); // Debugging
-        //System.out.println("Row: " + row); // Debugging
-        for (int i = 0; i < variables.size(); i++) {
-            evaluatedExpression = evaluatedExpression.replaceAll(variables.get(i), String.valueOf((row / (int) Math.pow(2, i)) % 2));
+        variables = variables.reversed();
+        for (int j = variables.size() - 1; j >=0; j--) {
+            evaluatedExpression = evaluatedExpression.replaceAll(variables.get(j), String.valueOf((row >> j) % 2));
         }
+        //System.out.println("Evaluated expression: " + evaluatedExpression); // Debug before postfix
         return String.valueOf(evaluatePostfixExpression(infixToPostfix(evaluatedExpression)));
     }
 
@@ -162,7 +189,6 @@ public class TruthTable {
         while (!stack.isEmpty()) {
             postfix += stack.pop();
         }
-        System.out.println("Postfix: " + postfix); // Debugging
         return postfix;
     }
 
@@ -245,11 +271,9 @@ public class TruthTable {
      */
     private int evaluatePostfixExpression(String expression) {
         Stack<Integer> stack = new Stack<>();
-        //System.out.println("Expression: " + expression); // Debugging
         for (char c : expression.toCharArray()) {
             if (isOperand(c)) { // '0' or '1'
                 stack.push(c - '0');
-                //System.out.println("c: " + c + ", Stack: " + stack); // Debugging
             } else if (isBinaryOperator(c)) { // '&' (AND) or '^' (XOR) or '|' (OR)
                 if (stack.isEmpty())
                     continue;
@@ -257,12 +281,10 @@ public class TruthTable {
                 int operand2 = stack.pop();
                 if (stack.isEmpty()) {
                     System.out.printf("Stack is empty after pop into operand2%n");
-                    //System.out.printf("c: %c, Operand1: undefined, Operand2: %d%n", c, operand2); // Debugging
                     stack.push(operand2); // Push the unused operand back to the stack
                     continue; // Need two operands to evaluate the expression
                 }
                 int operand1 = stack.pop();
-                //System.out.printf("c: %c, Operand1: %d, Operand2: %d, Stack: %s%n", c, operand1, operand2, stack); // Debugging
                 if (c == '&') { // Note: test equation a&!b&c|a&b|!c&!b|a&!c
                     stack.push(operand1 & operand2); // bitwise AND
                 } else if (c == '^') {
@@ -276,7 +298,6 @@ public class TruthTable {
                     continue;
                     //throw new IllegalArgumentException("Stack is empty"); // Oops, something went wrong
                 while(isUnaryOperator(c)) {
-                    //System.out.printf("c: %c, Stack: %s%n", c, stack); // Debugging
                     int operand = stack.pop();
                     stack.push(operand == 0 ? 1 : 0); // Take the complement of the operand and push it back to the stack
                     if (isUnaryOperator(stack.peek())) {
