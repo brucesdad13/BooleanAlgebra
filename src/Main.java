@@ -29,7 +29,7 @@
  * - AND: &
  * - XOR: ^
  * - OR: |
- *     Example:
+ *  Example:
  * TODO: update examples
  */
 import java.util.*; // For Stack and Scanner
